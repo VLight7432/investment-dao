@@ -1,0 +1,22 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        { "internalType": "address", "name": "_aaveLendingPool", "type": "address" },
+        { "internalType": "address", "name": "_uniswapRouter", "type": "address" },
+        { "internalType": "address", "name": "_curvePool", "type": "address" },
+        { "internalType": "address", "name": "_yearnVault", "type": "address" }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    { "inputs": [], "name": "aaveLendingPool", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "curvePool", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" },
+    { "inputs": [ { "internalType": "address", "name": "asset", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "depositAave", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [ { "internalType": "uint256[2]", "name": "amounts", "type": "uint256[2]" }, { "internalType": "uint256", "name": "minMint", "type": "uint256" } ], "name": "depositCurve", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [ { "internalType": "uint256", "name": "amount", "type": "uint256" } ], "name": "depositYearn", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [ { "internalType": "address[]", "name": "path", "type": "address[]" }, { "internalType": "uint256", "name": "amountIn", "type": "uint256" }, { "internalType": "uint256", "name": "amountOutMin", "type": "uint256" } ], "name": "swapUniswap", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+    { "inputs": [], "name": "uniswapRouter", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" },
+    { "inputs": [], "name": "yearnVault", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }
+  ]
+}

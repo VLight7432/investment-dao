@@ -1,0 +1,30 @@
+{
+  "name": "investment-dao",
+  "version": "1.0.0",
+  "description": "Investment DAO smart contracts and Hardhat tooling.",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:frontend": "npm --prefix frontend test",
+    "verify": "npm test && npm --prefix frontend run lint && npm --prefix frontend test && npm --prefix frontend run build",
+    "deploy:advanced": "hardhat run scripts/deploy-advanced.js",
+    "interact:advanced": "hardhat run scripts/interact-advanced.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.11",
+    "dotenv": "^17.2.3",
+    "hardhat": "^3.15.0",
+    "@nomicfoundation/hardhat-toolbox-mocha-ethers": "^3.0.7"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.5"
+  }
+}
