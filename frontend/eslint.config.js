@@ -33,6 +33,12 @@ export default defineConfig([
     },
   },
   {
+    files: ['vite.config.js', 'vitest.config.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     files: ['src/components/NotificationsContext.jsx', 'src/components/WalletContext.jsx'],
     rules: {
       'react-refresh/only-export-components': 'off',

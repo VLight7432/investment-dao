@@ -96,6 +96,24 @@ Le deploiement local utilise `MockSafe` exclusivement pour faciliter les tests.
 Configurez votre wallet avec le reseau Hardhat local et les comptes imprimes
 par `npx hardhat node`.
 
+## Demo GitHub Pages
+
+Le workflow `.github/workflows/deploy-pages.yml` publie automatiquement le
+frontend sur GitHub Pages a chaque push sur `main`. Pour le depot
+`VLight7432/investment-dao`, l'URL attendue est :
+
+```text
+https://vlight7432.github.io/investment-dao/
+```
+
+Dans les parametres GitHub du depot, choisissez **Settings > Pages > Build and
+deployment > Source: GitHub Actions**. La demo publique ne configure aucune
+adresse de contrat : les actions de wallet restent donc desactivees. Pour
+publier une DApp connectee, renseignez les variables `VITE_CHAIN_ID`,
+`VITE_DAO_ADDRESS`, `VITE_TOKEN_ADDRESS`, `VITE_SAFE_ADDRESS` et
+`VITE_QUARTERLY_REPORT_ADDRESS` dans le job de deploiement. Ces valeurs sont
+publiques une fois integrees au build ; n'y placez jamais de secret.
+
 ## Deploiement public
 
 1. Copiez `.env.example` vers `.env` et renseignez le RPC, la cle du deployeur
