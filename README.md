@@ -203,3 +203,4 @@ config/      Exemple de distribution initiale
 frontend/    DApp React/Vite
 docs/        Guides de gouvernance et documentation technique
 ```
+# investment-dao
