@@ -8,7 +8,12 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
-  componentDidCatch() {}
+  componentDidCatch(error) {
+    console.error("Erreur d’affichage de la DApp", error);
+  }
+  reset = () => {
+    this.setState({ hasError: false, error: null });
+  };
   render() {
     if (this.state.hasError) {
       return (
@@ -16,8 +21,9 @@ class ErrorBoundary extends React.Component {
           <div className="notice notice-error" role="alert">
             <div>
               <strong>La page n’a pas pu être affichée.</strong>
-              <span>Actualisez la page ou revenez à l’accueil. Aucun changement n’a été envoyé à la DAO.</span>
+              <span>Réessayez ou actualisez la page. Aucun changement n’a été envoyé à la DAO.</span>
             </div>
+            <button type="button" className="button button-secondary" onClick={this.reset}>Réessayer</button>
           </div>
         </main>
       );

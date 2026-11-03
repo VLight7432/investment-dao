@@ -106,11 +106,11 @@ const fetchDAOData = async (provider, account) => {
 
 const DAOSummary = () => {
   const {
-    provider, notification, account, chainId, isSupportedNetwork,
+    provider, notification, account, chainId, isSupportedNetwork, isDaoConfigured,
   } = useContext(WalletContext);
   const { data: daoDataRaw, loading, error } = useGlobalDataFetcher(
-    () => (isSupportedNetwork ? fetchDAOData(provider, account) : Promise.resolve(EMPTY_DAO_DATA)),
-    [provider, account, chainId, isSupportedNetwork],
+    () => (isSupportedNetwork && isDaoConfigured ? fetchDAOData(provider, account) : Promise.resolve(EMPTY_DAO_DATA)),
+    [provider, account, chainId, isSupportedNetwork, isDaoConfigured],
     { cacheKey: `dao-summary:${chainId ?? "disconnected"}` }
   );
   const daoData = {
@@ -204,7 +204,12 @@ const DAOSummary = () => {
         </Alert>
       )}
       {loading && <div className="status-row" role="status"><span className="spinner" aria-hidden="true" />Chargement des données de gouvernance…</div>}
-      {provider && !isSupportedNetwork && (
+      {!isDaoConfigured && (
+        <div className="notice notice-info" role="status">
+          <div><strong>Démo non connectée à une DAO</strong>Configurez les adresses DAO, token et Safe pour consulter les données on-chain. Les espaces de préparation restent disponibles.</div>
+        </div>
+      )}
+      {provider && isDaoConfigured && !isSupportedNetwork && (
         <div className="notice notice-warning" role="status">
           <div><strong>Données indisponibles sur ce réseau</strong>Connectez-vous au réseau configuré pour actualiser la synthèse.</div>
         </div>

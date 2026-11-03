@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
-import { ADDRESSES } from "../config-addresses";
+import { ADDRESSES, isDaoConfigured } from "../config-addresses";
 
 const disconnectedWallet = {
   account: "",
@@ -13,6 +13,7 @@ const disconnectedWallet = {
   setNotification: () => {},
   walletAvailable: false,
   isSupportedNetwork: false,
+  isDaoConfigured: false,
 };
 
 export const WalletContext = createContext(disconnectedWallet);
@@ -84,6 +85,7 @@ export const WalletProvider = ({ children }) => {
     setNotification,
     walletAvailable: Boolean(provider),
     isSupportedNetwork: chainId === ADDRESSES.CHAIN_ID,
+    isDaoConfigured,
   }), [account, provider, network, chainId, connectWallet, loading, notification]);
 
   return (

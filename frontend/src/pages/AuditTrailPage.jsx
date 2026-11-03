@@ -142,10 +142,10 @@ const fetchAudit = async (provider) => {
 };
 
 export default function AuditTrailPage() {
-  const { provider, chainId, isSupportedNetwork } = useContext(WalletContext);
+  const { provider, chainId, isSupportedNetwork, isDaoConfigured } = useContext(WalletContext);
   const { data: auditRaw, loading, error, refetch } = useGlobalDataFetcher(
-    () => (isSupportedNetwork ? fetchAudit(provider) : Promise.resolve(EMPTY_AUDIT)),
-    [provider, chainId, isSupportedNetwork],
+    () => (isSupportedNetwork && isDaoConfigured ? fetchAudit(provider) : Promise.resolve(EMPTY_AUDIT)),
+    [provider, chainId, isSupportedNetwork, isDaoConfigured],
     { cacheKey: `safe-audit:${chainId ?? "disconnected"}` }
   );
   const audit = { ...EMPTY_AUDIT, ...auditRaw, proposals: Array.isArray(auditRaw?.proposals) ? auditRaw.proposals : [], safeService: auditRaw?.safeService || { configured: false, error: "" } };
@@ -158,7 +158,8 @@ export default function AuditTrailPage() {
         <h1 className="page-title">Journal DAO et Safe</h1>
         <p className="page-intro">Suivez l’état vérifiable des propositions et la configuration du coffre-fort. Cette page est strictement en lecture seule.</p>
       </div>
-      {!isSupportedNetwork && provider && <div className="notice notice-warning" role="status"><div><strong>Mauvais réseau</strong>Connectez-vous au réseau configuré pour lire le journal on-chain.</div></div>}
+      {!isDaoConfigured && <div className="notice notice-info" role="status"><div><strong>Journal on-chain non configuré</strong>Configurez les adresses DAO, token et Safe pour afficher le journal vérifiable.</div></div>}
+      {isDaoConfigured && !isSupportedNetwork && provider && <div className="notice notice-warning" role="status"><div><strong>Mauvais réseau</strong>Connectez-vous au réseau configuré pour lire le journal on-chain.</div></div>}
       {error && <div className="notice notice-error" role="alert"><div><strong>Journal indisponible</strong>{error.message}</div></div>}
       {loading && <div className="status-row" role="status"><span className="spinner" aria-hidden="true" />Lecture des propositions et du Safe…</div>}
       {!loading && !error && audit.safe && (

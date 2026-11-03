@@ -28,5 +28,6 @@ export const ADDRESSES = {
   QUARTERLY_REPORT: addressFromEnv("VITE_QUARTERLY_REPORT_ADDRESS", useLocalDefaults ? "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318" : ""),
 };
 
+export const isDaoConfigured = Boolean(ADDRESSES.DAO && ADDRESSES.TOKEN && ADDRESSES.SAFE);
 export const isConfiguredAddress = isAddress;
 export const SAFE_TRANSACTION_SERVICE = safeServiceConfiguration;
