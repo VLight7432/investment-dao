@@ -29,6 +29,7 @@ jobs:
       - run: npm run build --prefix frontend
         env:
           VITE_BASE_PATH: /investment-dao/
+      - run: cp frontend/dist/index.html frontend/dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
