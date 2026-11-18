@@ -16,16 +16,27 @@ multisignature Safe.
 - **Gouvernance hybride** : 1 % de l'offre au snapshot pour proposer, un
   quorum de 20 %, une majorite de 50 %, un timelock et une execution reservee
   au Safe configure.
+- **Changements controles** : mandat et timelock exigent une proposition
+  multi-actions, un vote puis une execution Safe. Le timelock general est
+  fige a la creation ; le delai du mandat actif reste verifie a l'execution.
+  Le Safe peut mettre en pause ou reprendre les activites sans vote.
 - **Deliberation traçable** : une proposition peut referencer une discussion
   HTTPS ou IPFS ; un vote peut inclure un motif public facultatif.
 - **Mandats executoires** : categories autorisees, plafond par operation,
   plafond cumulatif, liste blanche de contreparties, delai et expiration sont
   controles au moment de l'execution.
+- **Actions de gouvernance limitees** : seules les modifications du mandat,
+  du timelock et l'emission gouvernee de tokens sont autorisees dans cette
+  categorie, sans transfert d'ETH.
 - **Emission gouvernee** : apres le deploiement, la DAO devient proprietaire
   du token. Une emission future exige une proposition, un vote et le Safe.
 - **Distribution explicite** : hors reseau local, toute l'offre initiale doit
   etre repartie dans un fichier d'allocations valide avant le transfert de
   propriete.
+
+Ces garanties necessitent un nouveau deploiement du contrat : les contrats
+deja deployes ne sont pas modifies automatiquement. Le journal actualise suppose
+cette nouvelle version pour calculer le delai general fige.
 
 Consultez le guide complet de
 [gouvernance et decentralisation progressive](docs/ADVANCED_FEATURES.md).

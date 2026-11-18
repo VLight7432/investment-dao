@@ -17,7 +17,7 @@ const stages = [
   {
     title: "3. Mandat collectif",
     status: "En place",
-    description: "Le mandat actif encadre categories, contreparties, plafonds, delais et expiration au moment de l'execution des investissements.",
+    description: "Le mandat actif encadre categories, contreparties, plafonds, delais et expiration. Pour le modifier : proposition, vote, delai fige, puis execution Safe. Le Safe peut mettre la DAO en pause, mais ne peut modifier seul le mandat ni le timelock.",
   },
   {
     title: "4. Transmission a la communaute",

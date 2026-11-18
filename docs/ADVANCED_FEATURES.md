@@ -14,6 +14,9 @@ des investissements au public.
   ensuite atteindre 20 % de quorum et 50 % de votes favorables.
 - Une proposition approuvee reste soumise au timelock, puis a l'execution du
   Safe configure. Le Safe n'est pas remplace par l'interface web.
+- Le timelock general est fige lors de la creation de chaque proposition.
+  Sa modification exige une proposition de gouvernance votee et executee par
+  le Safe. Le Safe peut mettre la DAO en pause et la reprendre sans vote.
 - Le contexte de discussion est separe de la transaction mais peut etre
   reference publiquement et de facon immuable sur chaine.
 
@@ -59,6 +62,15 @@ Sa configuration, modification et desactivation ne sont possibles que par un
 appel de la DAO a elle-meme, ce qui impose une proposition approuvee et le
 passage par le Safe. Chaque nouvelle version remet a zero les allocations et
 invalide les contreparties de la version precedente.
+Le delai du mandat actif est verifie en plus du timelock fige a l'execution.
+Une proposition approuvee reste executable si elle satisfait le mandat actif ;
+le contrat n'exige pas de nouveau vote apres un changement de version.
+
+Les multi-actions de gouvernance ne peuvent appeler que les fonctions de
+gestion du mandat ou du timelock de la DAO, ou `mint` sur le token de
+gouvernance, sans transfert d'ETH. Les actions d'investissement ne peuvent pas
+cibler directement la DAO ou son token de gouvernance. Ces restrictions ne
+remplacent pas un audit des contrats externes cibles par les investissements.
 
 ## Etapes de decentralisation
 

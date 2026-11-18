@@ -7,7 +7,7 @@ import { ADDRESSES } from "../config-addresses";
 import AdvancedInvestmentDAO from "../abis/AdvancedInvestmentDAO.json";
 import { getDecisionProposalPrefill, readDecisionDraft } from "../decisionStudio";
 
-const categories = ["Investissement NFT", "Investissement DeFi", "Venture capital", "Trésorerie", "Gouvernance"];
+const categories = ["Investissement NFT", "Investissement DeFi", "Venture capital", "Trésorerie"];
 const isAddress = (value) => /^0x[a-fA-F0-9]{40}$/.test(value);
 const isPositiveAmount = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
 const isDiscussionUri = (value) => {
@@ -123,7 +123,7 @@ const DAOActions = () => {
       <Card>
         <CardHeader>
           <CardTitle>Soumettre une proposition</CardTitle>
-          <CardDescription>Une proposition ne déclenche aucune exécution directe : elle suit le vote, le délai de sécurité puis la validation du Safe.</CardDescription>
+          <CardDescription>Une proposition ne déclenche aucune exécution directe : elle suit le vote, le délai de sécurité puis la validation du Safe. Les modifications du mandat utilisent le formulaire multi-actions de la page Mandats.</CardDescription>
         </CardHeader>
         <CardContent>
           {decisionDraftState.error && <div className="notice notice-error" role="alert">{decisionDraftState.error}</div>}

@@ -2,6 +2,7 @@ import React from "react";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
+import { applyDemoAction, createDemoState, DEMO_STORAGE_KEY } from "../demoState";
 
 vi.mock("../config-addresses", async (importOriginal) => ({
   ...await importOriginal(),
@@ -70,5 +71,23 @@ describe("démo simulée", () => {
     render(<App />);
     expect(await screen.findByText("24 ETH fictifs")).toBeInTheDocument();
     expect(await screen.findByText(/Exécutée · Mandat au snapshot/)).toBeInTheDocument();
+  });
+
+  it("affiche les modifications proposées du mandat avant le vote", async () => {
+    const state = applyDemoAction(createDemoState(), {
+      type: "create",
+      proposal: {
+        kind: "mandate", description: "Nouveau mandat", expiryDays: "90", delayDays: "3",
+        transactionCap: "2", caps: { DeFi: "5", NFT: "0", Venture: "0", Trésorerie: "0" },
+        counterparties: "Beta",
+      },
+    });
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
+    window.history.pushState({}, "", demoPath("/dashboard"));
+    render(<App />);
+    const card = within((await screen.findByText("Proposition fictive #2 · Nouveau mandat")).closest(".card"));
+    expect(card.getByText(/délai 3 jour/)).toBeInTheDocument();
+    expect(card.getByText("Contreparties : Beta")).toBeInTheDocument();
+    expect(card.getByText(/DeFi : 5 ETH fictifs/)).toBeInTheDocument();
   });
 });

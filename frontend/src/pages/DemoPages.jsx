@@ -24,6 +24,16 @@ function MemberSelect({ id, label, value, onChange }) {
   return <div className="field"><label htmlFor={id}>{label}</label><select id={id} value={value} onChange={(event) => onChange(event.target.value)}>{DEMO_MEMBERS.map((member) => <option key={member}>{member}</option>)}</select></div>;
 }
 
+function MandateChanges({ mandate }) {
+  return (
+    <div>
+      <p>Nouvelle version de mandat fictif : expiration {new Date(mandate.expiresAt).toLocaleString("fr-FR")} · délai {mandate.delayDays} jour(s) · plafond par opération {formatDemoAmount(mandate.transactionCap)}</p>
+      <p>Contreparties : {mandate.counterparties.join(", ")}</p>
+      <p>{DEMO_CATEGORIES.map((category) => `${category} : ${formatDemoAmount(mandate.caps[category])}`).join(" · ")}</p>
+    </div>
+  );
+}
+
 function ProposalCard({ proposal }) {
   const { data, run } = useDemo();
   const [member, setMember] = useState(DEMO_MEMBERS[0]);
@@ -37,7 +47,7 @@ function ProposalCard({ proposal }) {
       </CardHeader>
       <CardContent>
         {proposal.kind === "investment" && <p>{proposal.category} · {formatDemoAmount(proposal.amount)} · Contrepartie : {proposal.counterparty}</p>}
-        {proposal.kind === "mandate" && <p>Nouvelle version de mandat fictif</p>}
+        {proposal.kind === "mandate" && <MandateChanges mandate={proposal.newMandate} />}
         {proposal.kind === "report" && <p>Publication d’un rapport fictif</p>}
         <p>Pour : {totals.for.toLocaleString("fr-FR")} · Contre : {totals.against.toLocaleString("fr-FR")} · Safe : {proposal.approvals.length}/2</p>
         <p>Fin du vote fictif : {new Date(proposal.deadline).toLocaleString("fr-FR")}</p>
@@ -145,6 +155,7 @@ export function DemoDashboardPage() {
           </CardContent>
         </Card>
         <div className="notice notice-info"><div><strong>Règles simplifiées</strong>Trois membres fictifs possèdent respectivement 40 %, 30 % et 30 % des voix. Vote : 3 jours fictifs ; quorum : 20 % ; approbation : au moins 50 % ; Safe : 2 signatures sur 3. Le vote est clôturé manuellement après sa date de fin.</div></div>
+        <div className="notice notice-info"><div><strong>Vote → délai → Safe</strong>Les changements de mandat suivent ce parcours. Dans le contrat, le Safe peut mettre la DAO en pause, mais ne peut pas modifier seul le mandat ou le timelock.</div></div>
         <InvestmentForm category="DeFi" allowCategory />
         <div className="form-actions"><Link className="button button-secondary" to="/defi">Proposer une opération DeFi</Link><Link className="button button-secondary" to="/nft">Proposer un NFT</Link><Link className="button button-secondary" to="/mandates">Proposer un mandat</Link><Link className="button button-secondary" to="/reports">Proposer un rapport</Link></div>
         {data.proposals.map((proposal) => <ProposalCard key={proposal.id} proposal={proposal} />)}
@@ -214,7 +225,7 @@ export function DemoAuditPage() {
           <CardHeader><CardTitle>Cycle des propositions</CardTitle><CardDescription>La version au snapshot donne le contexte du vote ; la version active est vérifiée à l’exécution.</CardDescription></CardHeader>
           <CardContent><div className="table-wrap"><table>
             <thead><tr><th>Proposition</th><th>Mandat au snapshot</th><th>Mandat actif actuel</th><th>État fictif</th><th>Safe fictif</th><th>Mandat à l’exécution</th></tr></thead>
-            <tbody>{data.proposals.map((proposal) => <tr key={proposal.id}><td>#{proposal.id} · {proposal.description}</td><td>Version {proposal.snapshotVersion}</td><td>Version {data.mandate.version}</td><td>{statuses[proposal.status]}</td><td>{proposal.approvals.length}/2</td><td>{proposal.executedMandateVersion ? `Version ${proposal.executedMandateVersion}` : "—"}</td></tr>)}</tbody>
+            <tbody>{data.proposals.map((proposal) => <tr key={proposal.id}><td>#{proposal.id} · {proposal.description}{proposal.kind === "mandate" && <MandateChanges mandate={proposal.newMandate} />}</td><td>Version {proposal.snapshotVersion}</td><td>Version {data.mandate.version}</td><td>{statuses[proposal.status]}</td><td>{proposal.approvals.length}/2</td><td>{proposal.executedMandateVersion ? `Version ${proposal.executedMandateVersion}` : "—"}</td></tr>)}</tbody>
           </table></div></CardContent>
         </Card>
         <Card>

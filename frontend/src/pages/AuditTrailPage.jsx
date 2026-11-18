@@ -6,6 +6,7 @@ import { WalletContext } from "../components/WalletContext";
 import { ADDRESSES, SAFE_TRANSACTION_SERVICE } from "../config-addresses";
 import AdvancedInvestmentDAO from "../abis/AdvancedInvestmentDAO.json";
 import { useGlobalDataFetcher } from "../hooks/useGlobalDataFetcher";
+import { describeGovernanceAction, proposalLifecycle } from "../auditHelpers";
 
 const SAFE_ABI = [
   "function getOwners() view returns (address[])",
@@ -19,14 +20,6 @@ const EMPTY_AUDIT = {
   proposals: [],
   activeMandate: null,
   mockApprovalsAvailable: false,
-};
-
-const lifecycle = (proposal, now, timelock, mandateDelay) => {
-  if (proposal.executed) return "Exécutée";
-  if (now < proposal.deadline) return "Vote en cours";
-  if (!proposal.approved) return "Vote non approuvé";
-  const delay = proposal.category === 4 ? timelock : Math.max(timelock, mandateDelay);
-  return now < proposal.deadline + delay ? "Délai de sécurité actif" : "Prête pour le Safe";
 };
 
 const readSafeServiceApprovals = async (proposals) => {
@@ -81,8 +74,8 @@ const fetchAudit = async (provider) => {
   const dao = new ethers.Contract(ADDRESSES.DAO, AdvancedInvestmentDAO.abi, provider);
   const safe = new ethers.Contract(ADDRESSES.SAFE, SAFE_ABI, provider);
   const token = new ethers.Contract(ADDRESSES.TOKEN, TOKEN_ABI, provider);
-  const [owners, threshold, mandate, timelock, simpleCount, multiCount, block] = await Promise.all([
-    safe.getOwners(), safe.getThreshold(), dao.getInvestmentMandate(), dao.timelockDelay(),
+  const [owners, threshold, mandate, simpleCount, multiCount, block] = await Promise.all([
+    safe.getOwners(), safe.getThreshold(), dao.getInvestmentMandate(),
     dao.proposalCount(), dao.multiActionProposalCount(), provider.getBlock("latest"),
   ]);
   const now = Number(block.timestamp);
@@ -109,7 +102,7 @@ const fetchAudit = async (provider) => {
       mandateAtSnapshot: snapshotMandate
         ? (snapshotMandate.active ? snapshotMandate.version.toString() : "none")
         : null,
-      lifecycle: lifecycle({ deadline: Number(proposal.deadline), executed: proposal.executed, approved, category: Number(proposal.category) }, now, Number(timelock), mandateDelay),
+      lifecycle: proposalLifecycle({ deadline: Number(proposal.deadline), executionTime: Number(proposal.executionTime), executed: proposal.executed, approved, category: Number(proposal.category) }, now, mandateDelay),
       executionData,
     });
   }
@@ -122,13 +115,20 @@ const fetchAudit = async (provider) => {
     const votes = proposal.votesFor + proposal.votesAgainst;
     const approved = votes > 0n && votes * 100n >= supply * 20n && proposal.votesFor * 100n >= votes * 50n;
     const executionData = dao.interface.encodeFunctionData("executeMultiActionProposal", [id]);
+    const governanceChanges = Number(proposal.category) === 4
+      ? (await Promise.all(Array.from({ length: Number(proposal.actionCount) }, async (_, index) => {
+        const action = await dao.getMultiAction(id, index);
+        return describeGovernanceAction(dao, action.target, action.value, action.data);
+      }))).filter(Boolean)
+      : [];
     proposals.push({
       id, type: "Multi-actions", description: proposal.description, category: Number(proposal.category),
       deadline: Number(proposal.deadline), executed: proposal.executed, approved,
       mandateAtSnapshot: snapshotMandate
         ? (snapshotMandate.active ? snapshotMandate.version.toString() : "none")
         : null,
-      lifecycle: lifecycle({ deadline: Number(proposal.deadline), executed: proposal.executed, approved, category: Number(proposal.category) }, now, Number(timelock), mandateDelay),
+      governanceChanges,
+      lifecycle: proposalLifecycle({ deadline: Number(proposal.deadline), executionTime: Number(proposal.executionTime), executed: proposal.executed, approved, category: Number(proposal.category) }, now, mandateDelay),
       executionData,
     });
   }
@@ -196,7 +196,7 @@ export default function AuditTrailPage() {
             <CardHeader><CardTitle>Cycle des propositions</CardTitle><CardDescription>Comparez la version du mandat présente au snapshot du vote à la version actuellement active. L’exécution applique toujours les règles actives au moment où le Safe soumet la transaction.</CardDescription></CardHeader>
             <CardContent>
               {audit.proposals.length ? <div className="table-wrap"><table><thead><tr><th>Type</th><th>Description</th><th>Mandat au snapshot</th><th>Mandat actif</th><th>Fin du vote</th><th>État DAO</th><th>Approbations Safe</th></tr></thead><tbody>
-                {audit.proposals.map((proposal) => <tr key={`${proposal.type}-${proposal.id}`}><td>{proposal.type} #{proposal.id}</td><td>{proposal.description}</td><td>{proposal.mandateAtSnapshot === null ? "Historique indisponible" : proposal.mandateAtSnapshot === "none" ? "Aucun mandat actif" : `Version ${proposal.mandateAtSnapshot}`}</td><td>{audit.activeMandate?.active ? `Version ${audit.activeMandate.version}` : "Aucun mandat actif"}</td><td>{date.format(new Date(proposal.deadline * 1000))}</td><td>{proposal.lifecycle}</td><td>{proposal.approvals === null ? "Non indexé" : `${proposal.approvals}/${proposal.serviceThreshold || audit.safe.threshold}`}</td></tr>)}
+                {audit.proposals.map((proposal) => <tr key={`${proposal.type}-${proposal.id}`}><td>{proposal.type} #{proposal.id}</td><td>{proposal.description}{proposal.governanceChanges?.length > 0 && <ul>{proposal.governanceChanges.map((change, index) => <li key={`${index}-${change}`}>{change}</li>)}</ul>}</td><td>{proposal.mandateAtSnapshot === null ? "Historique indisponible" : proposal.mandateAtSnapshot === "none" ? "Aucun mandat actif" : `Version ${proposal.mandateAtSnapshot}`}</td><td>{audit.activeMandate?.active ? `Version ${audit.activeMandate.version}` : "Aucun mandat actif"}</td><td>{date.format(new Date(proposal.deadline * 1000))}</td><td>{proposal.lifecycle}</td><td>{proposal.approvals === null ? "Non indexé" : `${proposal.approvals}/${proposal.serviceThreshold || audit.safe.threshold}`}</td></tr>)}
               </tbody></table></div> : <p>Aucune proposition on-chain n’a été trouvée.</p>}
               <div className="form-actions"><button className="button button-secondary" type="button" onClick={() => void refetch()}>Actualiser</button></div>
             </CardContent>

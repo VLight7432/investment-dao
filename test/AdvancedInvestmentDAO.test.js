@@ -113,7 +113,7 @@ describe("AdvancedInvestmentDAO hybrid governance", function () {
         "Insufficient proposal threshold",
         recipient.address,
         0,
-        4
+        0
       )
     ).to.be.revertedWith("Proposal threshold not met");
 
@@ -122,7 +122,7 @@ describe("AdvancedInvestmentDAO hybrid governance", function () {
       "Threshold met",
       recipient.address,
       0,
-      4
+      0
     );
     expect(await dao.proposalCount()).to.equal(1n);
   });
@@ -237,18 +237,27 @@ describe("AdvancedInvestmentDAO hybrid governance", function () {
     expect((await dao.getProposal(1)).executed).to.equal(true);
   });
 
-  it("permits pause and timelock management only through Safe", async function () {
+  it("permits emergency pause through Safe but requires governance to change the timelock", async function () {
     await expect(dao.connect(safeOwner).pause()).to.be.revertedWith("Safe only");
     await expect(dao.connect(safeOwner).setTimelockDelay(3600)).to.be.revertedWith(
-      "Safe only"
+      "DAO proposal only"
     );
 
     await safeExecute("pause");
     expect(await dao.paused()).to.equal(true);
-    await safeExecute("setTimelockDelay", [7200]);
-    expect(await dao.timelockDelay()).to.equal(7200n);
+    await expect(safeExecute("setTimelockDelay", [7200])).to.be.revertedWith("Safe execution failed");
     await safeExecute("unpause");
     expect(await dao.paused()).to.equal(false);
+
+    await dao.connect(alice).createMultiActionProposal(
+      "Change timelock", [daoAddress], [0], [daoCall("setTimelockDelay", [7200])], 4
+    );
+    await dao.connect(alice).voteMultiAction(1, true);
+    await networkHelpers.time.increase(3 * 24 * 60 * 60);
+    await expect(safeExecute("executeMultiActionProposal", [1])).to.be.revertedWith("Safe execution failed");
+    await networkHelpers.time.increase(24 * 60 * 60);
+    await safe.connect(safeOwner).execute(daoAddress, 0, daoCall("executeMultiActionProposal", [1]));
+    expect(await dao.timelockDelay()).to.equal(7200n);
   });
 
   it("only lets a passed DAO proposal configure an investment mandate", async function () {
@@ -268,6 +277,84 @@ describe("AdvancedInvestmentDAO hybrid governance", function () {
     expect(await dao.mandateCategoryAllowed(0)).to.equal(true);
     expect(await dao.isMandateCounterpartyAllowed(recipient.address)).to.equal(true);
     expect(await dao.getActiveMandateCounterparties()).to.deep.equal([recipient.address]);
+  });
+
+  it("rejects all direct Safe mandate changes and unapproved proposals", async function () {
+    const now = (await ethers.provider.getBlock("latest")).timestamp;
+    for (const [name, args] of [
+      ["configureInvestmentMandate", [now + 30 * 86400, 3600, unit("2")]],
+      ["setMandateCategory", [0, true, unit("4")]],
+      ["setMandateCounterparty", [recipient.address, true]],
+      ["setInvestmentMandateActive", [false]],
+    ]) {
+      await expect(safeExecute(name, args)).to.be.revertedWith("Safe execution failed");
+    }
+    await dao.connect(alice).createMultiActionProposal(
+      "Unapproved mandate", [daoAddress], [0],
+      [daoCall("configureInvestmentMandate", [now + 30 * 86400, 3600, unit("2")])], 4
+    );
+    await networkHelpers.time.increase(4 * 86400);
+    await expect(safeExecute("executeMultiActionProposal", [1])).to.be.revertedWith("Safe execution failed");
+    expect((await dao.getInvestmentMandate()).active).to.equal(false);
+  });
+
+  it("blocks disguised governance transfers and protected calls in investment proposals", async function () {
+    await expect(dao.connect(alice).createProposal("Disguised transfer", recipient.address, unit("1"), 4))
+      .to.be.revertedWith("Governance requires actions");
+    for (const [target, value, data] of [
+      [recipient.address, unit("1"), "0x"],
+      [recipient.address, 0, "0x12345678"],
+      [daoAddress, unit("1"), daoCall("setTimelockDelay", [3600])],
+      [daoAddress, 0, daoCall("pause")],
+      [tokenAddress, 0, token.interface.encodeFunctionData("transfer", [recipient.address, unit("1")])],
+    ]) {
+      await expect(dao.connect(alice).createMultiActionProposal("Invalid governance", [target], [value], [data], 4))
+        .to.be.revertedWith("Invalid governance action");
+    }
+    await expect(dao.connect(alice).createMultiActionProposal(
+      "Protected DAO action", [daoAddress], [0], [daoCall("setInvestmentMandateActive", [false])], 0
+    )).to.be.revertedWith("Protected target");
+    await expect(dao.connect(alice).createMultiActionProposal(
+      "Protected token action", [tokenAddress], [0], [token.interface.encodeFunctionData("mint", [alice.address, 1])], 0
+    )).to.be.revertedWith("Protected target");
+    await expect(dao.connect(alice).createProposal("Protected target", daoAddress, 0, 0))
+      .to.be.revertedWith("Protected target");
+  });
+
+  it("freezes the general delay for pending simple and multi-action proposals", async function () {
+    const day = 86400;
+    await dao.connect(alice).createMultiActionProposal(
+      "Extend delay", [daoAddress], [0], [daoCall("setTimelockDelay", [5 * day])], 4
+    );
+    await dao.connect(alice).voteMultiAction(1, true);
+    await networkHelpers.time.increase(4 * day);
+    await safeExecute("executeMultiActionProposal", [1]);
+
+    await dao.connect(alice).createMultiActionProposal(
+      "Shorten delay", [daoAddress], [0], [daoCall("setTimelockDelay", [3600])], 4
+    );
+    await dao.connect(alice).voteMultiAction(2, true);
+    await networkHelpers.time.increase(2 * day);
+    await createFundedProposal();
+    await dao.connect(alice).vote(1, true);
+    await dao.connect(alice).createMultiActionProposal(
+      "Pending investment", [recipient.address], [unit("1")], ["0x"], 0
+    );
+    await dao.connect(alice).voteMultiAction(3, true);
+    const simpleTime = (await dao.getProposal(1)).executionTime;
+    const multiTime = (await dao.getMultiActionProposal(3)).executionTime;
+    await networkHelpers.time.increase(6 * day);
+    await safeExecute("executeMultiActionProposal", [2]);
+    expect(await dao.timelockDelay()).to.equal(3600n);
+    expect((await dao.getProposal(1)).executionTime).to.equal(simpleTime);
+    expect((await dao.getMultiActionProposal(3)).executionTime).to.equal(multiTime);
+    await expect(safeExecute("executeProposal", [1])).to.be.revertedWith("Safe execution failed");
+    await expect(safeExecute("executeMultiActionProposal", [3])).to.be.revertedWith("Safe execution failed");
+    await networkHelpers.time.increaseTo(Number(multiTime));
+    await safe.connect(safeOwner).execute(daoAddress, 0, daoCall("executeProposal", [1]));
+    await safe.connect(safeOwner).execute(daoAddress, 0, daoCall("executeMultiActionProposal", [3]));
+    expect((await dao.getProposal(1)).executed).to.equal(true);
+    expect((await dao.getMultiActionProposal(3)).executed).to.equal(true);
   });
 
   it("enforces mandate delay and cumulative allocation caps", async function () {

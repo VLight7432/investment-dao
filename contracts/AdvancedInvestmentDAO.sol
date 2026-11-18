@@ -259,6 +259,8 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
         uint256 snapshotBlock = _snapshot();
         _requireProposerVotingPower(msg.sender, snapshotBlock);
         require(target != address(0), "Invalid target");
+        require(category != ProposalCategory.GOVERNANCE, "Governance requires actions");
+        require(target != address(this) && target != address(governanceToken), "Protected target");
         require(value <= address(this).balance, "Insufficient treasury");
         require(bytes(discussionURI).length <= 512, "Discussion URI too long");
 
@@ -328,7 +330,8 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
     function _validateActions(
         address[] calldata targets,
         uint256[] calldata values,
-        bytes[] calldata datas
+        bytes[] calldata datas,
+        ProposalCategory category
     ) private view returns (uint256 aggregateValue) {
         require(
             targets.length != 0 &&
@@ -339,6 +342,21 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
 
         for (uint256 i; i < targets.length; ++i) {
             require(targets[i] != address(0), "Invalid target");
+            if (category == ProposalCategory.GOVERNANCE) {
+                require(values[i] == 0 && datas[i].length >= 4, "Invalid governance action");
+                bytes4 selector = bytes4(datas[i][:4]);
+                bool daoAction = targets[i] == address(this) &&
+                    (selector == this.configureInvestmentMandate.selector ||
+                     selector == this.setMandateCategory.selector ||
+                     selector == this.setMandateCounterparty.selector ||
+                     selector == this.setInvestmentMandateActive.selector ||
+                     selector == this.setTimelockDelay.selector);
+                bool tokenAction = targets[i] == address(governanceToken) &&
+                    selector == GovernanceToken.mint.selector;
+                require(daoAction || tokenAction, "Invalid governance action");
+            } else {
+                require(targets[i] != address(this) && targets[i] != address(governanceToken), "Protected target");
+            }
             aggregateValue += values[i];
         }
         require(aggregateValue <= address(this).balance, "Insufficient treasury");
@@ -368,7 +386,7 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
         uint256 snapshotBlock = _snapshot();
         _requireProposerVotingPower(msg.sender, snapshotBlock);
         require(bytes(discussionURI).length <= 512, "Discussion URI too long");
-        _validateActions(targets, values, datas);
+        _validateActions(targets, values, datas, category);
 
         proposalId = ++multiActionProposalCount;
         MultiActionProposal storage proposal = multiActionProposals[proposalId];
@@ -484,17 +502,19 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
 
     function _requireExecutionDelay(
         uint256 deadline,
+        uint256 executionTime,
         ProposalCategory category
     ) private view {
-        uint256 requiredDelay = timelockDelay;
+        require(block.timestamp >= executionTime, "Timelock active");
         if (
             investmentMandate.active &&
-            category != ProposalCategory.GOVERNANCE &&
-            investmentMandate.executionDelay > requiredDelay
+            category != ProposalCategory.GOVERNANCE
         ) {
-            requiredDelay = investmentMandate.executionDelay;
+            require(
+                block.timestamp >= deadline + investmentMandate.executionDelay,
+                "Mandate delay active"
+            );
         }
-        require(block.timestamp >= deadline + requiredDelay, "Mandate delay active");
     }
 
     function _enforceMandate(
@@ -531,7 +551,7 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
         Proposal storage proposal = proposals[proposalId];
         require(proposal.proposer != address(0), "Proposal does not exist");
         require(!proposal.executed, "Already executed");
-        _requireExecutionDelay(proposal.deadline, proposal.category);
+        _requireExecutionDelay(proposal.deadline, proposal.executionTime, proposal.category);
         require(
             _isApproved(
                 proposal.votesFor,
@@ -557,7 +577,7 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
         MultiActionProposal storage proposal = multiActionProposals[proposalId];
         require(proposal.proposer != address(0), "Proposal does not exist");
         require(!proposal.executed, "Already executed");
-        _requireExecutionDelay(proposal.deadline, proposal.category);
+        _requireExecutionDelay(proposal.deadline, proposal.executionTime, proposal.category);
         require(
             _isApproved(
                 proposal.votesFor,
@@ -591,7 +611,7 @@ contract AdvancedInvestmentDAO is ReentrancyGuard {
         emit Unpaused(msg.sender);
     }
 
-    function setTimelockDelay(uint256 delay) external onlySafe {
+    function setTimelockDelay(uint256 delay) external onlyDAO {
         require(delay >= 1 hours, "Delay too short");
         emit TimelockDelayUpdated(timelockDelay, delay);
         timelockDelay = delay;

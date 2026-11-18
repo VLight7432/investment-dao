@@ -156,7 +156,7 @@ export default function MandateControlPage() {
       <div className="page-header">
         <p className="eyebrow">Contrôle de trésorerie</p>
         <h1 className="page-title">Centre de contrôle des mandats</h1>
-        <p className="page-intro">Consultez les règles exécutoires de la DAO avant une décision. Cette page lit le contrat : elle ne peut ni modifier le mandat ni exécuter une transaction.</p>
+        <p className="page-intro">Consultez les règles exécutoires et préparez une proposition de mandat. Sa création ne modifie pas le mandat : elle exige un vote, un délai, puis une exécution par le Safe.</p>
       </div>
 
       {!isSupportedNetwork && provider && <div className="notice notice-warning" role="status"><div><strong>Mauvais réseau</strong>Connectez-vous au réseau configuré pour consulter le mandat actif.</div></div>}
@@ -233,7 +233,7 @@ export default function MandateControlPage() {
         <Card>
           <CardHeader>
             <CardTitle id="mandate-composer-heading">Proposer une nouvelle version</CardTitle>
-            <CardDescription>Cette action crée uniquement une proposition multi-actions de gouvernance. Elle ne modifie pas le mandat tant que le vote et le Safe ne l’ont pas validée.</CardDescription>
+            <CardDescription>Cette action crée uniquement une proposition multi-actions de gouvernance. Les changements proposés sont visibles dans le journal ; ils ne s’appliquent qu’après le vote, le délai de sécurité et l’exécution par le Safe.</CardDescription>
           </CardHeader>
           <CardContent>
             {composerError && <div className="notice notice-error" role="alert"><div>{composerError}</div></div>}
