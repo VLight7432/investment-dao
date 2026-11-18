@@ -108,7 +108,10 @@ https://vlight7432.github.io/investment-dao/
 
 Dans les parametres GitHub du depot, choisissez **Settings > Pages > Build and
 deployment > Source: GitHub Actions**. Le workflow publie une simulation
-en lecture seule : les donnees sont fictives et aucune transaction n'est envoyee.
+interactive : les donnees et ETH sont fictifs, les actions sont conservees
+dans le navigateur et aucune transaction n'est envoyee. Les votes et
+signatures sont simules localement. Une horloge fictive permet de faire avancer
+les periodes de vote, les delais de securite et l'expiration du mandat.
 Pour publier plutot une DApp connectee, retirez `VITE_DEMO_MODE: "true"` du
 workflow et renseignez dans **Settings > Secrets and variables >
 Actions > Variables** les variables `VITE_CHAIN_ID`,

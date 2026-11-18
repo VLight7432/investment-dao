@@ -1,5 +1,5 @@
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 
@@ -13,6 +13,7 @@ const demoPath = (path) => `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path
 describe("démo simulée", () => {
   afterEach(() => {
     cleanup();
+    localStorage.clear();
     delete window.ethereum;
   });
 
@@ -40,5 +41,34 @@ describe("démo simulée", () => {
     expect(await screen.findByText("Version 1")).toBeInTheDocument();
     expect(screen.getByText("Version 2")).toBeInTheDocument();
     expect(screen.getByText("1/2")).toBeInTheDocument();
+  });
+
+  it("conserve une proposition et son exécution après rechargement", async () => {
+    window.history.pushState({}, "", demoPath("/defi"));
+    render(<App />);
+    fireEvent.change(await screen.findByLabelText("Description DeFi"), { target: { value: "Prêt fictif" } });
+    fireEvent.change(screen.getByLabelText("Montant en ETH fictifs"), { target: { value: "1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Créer la proposition fictive" }));
+    expect(screen.getByText(/Proposition créée dans ce navigateur/)).toBeInTheDocument();
+
+    cleanup();
+    window.history.pushState({}, "", demoPath("/dashboard"));
+    render(<App />);
+    const heading = await screen.findByText("Proposition fictive #2 · Prêt fictif");
+    const card = within(heading.closest(".card"));
+    fireEvent.click(card.getByRole("button", { name: "Voter pour" }));
+    fireEvent.click(screen.getByRole("button", { name: "Avancer le temps fictif" }));
+    fireEvent.click(card.getByRole("button", { name: "Clôturer le vote" }));
+    fireEvent.click(card.getByRole("button", { name: "Approuver dans le Safe fictif" }));
+    fireEvent.change(card.getByLabelText("Membre / signataire fictif"), { target: { value: "Bruno" } });
+    fireEvent.click(card.getByRole("button", { name: "Approuver dans le Safe fictif" }));
+    fireEvent.change(screen.getByLabelText("Nombre de jours à avancer"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Avancer le temps fictif" }));
+    fireEvent.click(card.getByRole("button", { name: "Exécuter fictivement" }));
+
+    cleanup();
+    render(<App />);
+    expect(await screen.findByText("24 ETH fictifs")).toBeInTheDocument();
+    expect(await screen.findByText(/Exécutée · Mandat au snapshot/)).toBeInTheDocument();
   });
 });

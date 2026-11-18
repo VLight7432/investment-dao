@@ -98,7 +98,7 @@ a { color: inherit; }
 .field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: #bd3b3a; }
 .field-help { color: #68758f; font-size: .8rem; line-height: 1.4; }
 .field-error { color: #a52d2b; font-size: .82rem; font-weight: 650; }
-.form-actions { display: flex; gap: 10px; margin-top: 20px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; border-bottom: 1px solid #e9edf4; text-align: left; vertical-align: top; }

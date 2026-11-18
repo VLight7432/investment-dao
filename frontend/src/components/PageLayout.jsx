@@ -25,7 +25,7 @@ const PageLayout = ({ children }) => {
         <main className="page-main">
           {isDemoMode && (
             <div className="notice notice-warning" role="status">
-              <div><strong>Démo simulée</strong>Données fictives, sans blockchain ni wallet. Aucun vote, fonds ou transaction ne sera créé.</div>
+              <div><strong>Démo simulée</strong>ETH, votes et transactions fictifs, enregistrés uniquement dans ce navigateur. Aucune blockchain ni aucun wallet ne sont utilisés.</div>
             </div>
           )}
           {children}
