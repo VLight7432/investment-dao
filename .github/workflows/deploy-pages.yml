@@ -29,6 +29,13 @@ jobs:
       - run: npm run build --prefix frontend
         env:
           VITE_BASE_PATH: /investment-dao/
+          VITE_DEMO_MODE: "true"
+          VITE_CHAIN_ID: ${{ vars.VITE_CHAIN_ID }}
+          VITE_DAO_ADDRESS: ${{ vars.VITE_DAO_ADDRESS }}
+          VITE_TOKEN_ADDRESS: ${{ vars.VITE_TOKEN_ADDRESS }}
+          VITE_SAFE_ADDRESS: ${{ vars.VITE_SAFE_ADDRESS }}
+          VITE_QUARTERLY_REPORT_ADDRESS: ${{ vars.VITE_QUARTERLY_REPORT_ADDRESS }}
+          VITE_SAFE_TX_SERVICE_URL: ${{ vars.VITE_SAFE_TX_SERVICE_URL }}
       - run: cp frontend/dist/index.html frontend/dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -107,11 +107,14 @@ https://vlight7432.github.io/investment-dao/
 ```
 
 Dans les parametres GitHub du depot, choisissez **Settings > Pages > Build and
-deployment > Source: GitHub Actions**. La demo publique ne configure aucune
-adresse de contrat : les actions de wallet restent donc desactivees. Pour
-publier une DApp connectee, renseignez les variables `VITE_CHAIN_ID`,
+deployment > Source: GitHub Actions**. Le workflow publie une simulation
+en lecture seule : les donnees sont fictives et aucune transaction n'est envoyee.
+Pour publier plutot une DApp connectee, retirez `VITE_DEMO_MODE: "true"` du
+workflow et renseignez dans **Settings > Secrets and variables >
+Actions > Variables** les variables `VITE_CHAIN_ID`,
 `VITE_DAO_ADDRESS`, `VITE_TOKEN_ADDRESS`, `VITE_SAFE_ADDRESS` et
-`VITE_QUARTERLY_REPORT_ADDRESS` dans le job de deploiement. Ces valeurs sont
+`VITE_QUARTERLY_REPORT_ADDRESS`. `VITE_SAFE_TX_SERVICE_URL` est facultative.
+Relancez ensuite le workflow **Deploy GitHub Pages**. Ces valeurs sont
 publiques une fois integrees au build ; n'y placez jamais de secret.
 
 ## Deploiement public

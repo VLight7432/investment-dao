@@ -6,6 +6,7 @@ const addressFromEnv = (name, fallback = "") => {
 };
 
 const configuredChainId = Number(import.meta.env.VITE_CHAIN_ID || 31337);
+export const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
 const configuredSafeServiceUrl = import.meta.env.VITE_SAFE_TX_SERVICE_URL || "";
 const safeServiceConfiguration = (() => {
   if (!configuredSafeServiceUrl) return { url: "", error: "" };

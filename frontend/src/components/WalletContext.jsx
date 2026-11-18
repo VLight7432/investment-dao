@@ -18,6 +18,10 @@ const disconnectedWallet = {
 
 export const WalletContext = createContext(disconnectedWallet);
 
+export const DemoWalletProvider = ({ children }) => (
+  <WalletContext.Provider value={disconnectedWallet}>{children}</WalletContext.Provider>
+);
+
 export const WalletProvider = ({ children }) => {
   const [account, setAccount] = useState("");
   const [provider] = useState(() => (
