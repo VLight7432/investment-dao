@@ -74,6 +74,16 @@ a { color: inherit; }
 .empty-state { padding: 28px; border: 1px dashed #cbd5e5; border-radius: 12px; background: #fbfcfe; color: #5e6b85; text-align: center; line-height: 1.6; }
 .empty-state h2, .empty-state h3 { margin: 0 0 8px; color: #253450; font-size: 1.1rem; }
 .empty-state p { max-width: 600px; margin: 0 auto; }
+.demo-walkthrough { border-color: #d9d2ff; background: #fcfbff; }
+.demo-walkthrough-steps { display: grid; gap: 14px; padding: 0; margin: 0; list-style: none; }
+.demo-walkthrough-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.demo-walkthrough-steps li > span { display: grid; width: 26px; height: 26px; flex: 0 0 26px; place-items: center; border: 1px solid #cbd5e5; border-radius: 50%; background: white; color: #53617b; font-size: .82rem; font-weight: 750; }
+.demo-walkthrough-steps li.is-complete > span { border-color: #27744a; background: #e6f7ee; color: #17633b; }
+.demo-walkthrough-steps li > div { display: grid; gap: 3px; }
+.demo-walkthrough-steps strong { color: #35425c; }
+.demo-walkthrough-steps p { margin: 0; color: #68758f; font-size: .88rem; line-height: 1.45; }
+.demo-walkthrough-steps a { color: #4b39ac; font-size: .9rem; font-weight: 650; }
+.demo-walkthrough-note { margin: 16px 0 0; color: #5e6b85; font-size: .9rem; line-height: 1.5; }
 .app-loading, .loader { display: grid; min-height: 160px; place-items: center; color: #5e6b85; }
 .loader-content { display: flex; align-items: center; gap: 10px; }
 .spinner { width: 22px; height: 22px; border: 3px solid #d8dff1; border-top-color: #5542bd; border-radius: 50%; animation: spin .8s linear infinite; }

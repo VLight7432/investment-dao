@@ -16,6 +16,7 @@ describe("démo simulée", () => {
     cleanup();
     localStorage.clear();
     delete window.ethereum;
+    vi.restoreAllMocks();
   });
 
   it.each([
@@ -42,6 +43,45 @@ describe("démo simulée", () => {
     expect(await screen.findByText("Version 1")).toBeInTheDocument();
     expect(screen.getByText("Version 2")).toBeInTheDocument();
     expect(screen.getByText("1/2")).toBeInTheDocument();
+  });
+
+  it("guide le visiteur dans le scénario de gouvernance", async () => {
+    window.history.pushState({}, "", demoPath("/dashboard"));
+    render(<App />);
+
+    expect(await screen.findByText("Parcours guidé de la démo")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "journal d’audit" })).toHaveAttribute("href", "/audit");
+    expect(screen.getByRole("link", { name: "proposition #1" })).toHaveAttribute("href", "#demo-proposal-1");
+    expect(screen.getByText("Créer une proposition d’investissement")).toBeInTheDocument();
+    expect(screen.getByText("Obtenir les signatures Safe (0/2)")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Consulter ou avancer l’horloge" })).toHaveAttribute("href", "#demo-clock");
+  });
+
+  it("relie le parcours à la proposition créée et met à jour son avancement", async () => {
+    const state = applyDemoAction(createDemoState(), {
+      type: "create",
+      proposal: { kind: "investment", category: "DeFi", description: "Prêt communautaire", counterparty: "Alpha", amount: "1" },
+    });
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
+    window.history.pushState({}, "", demoPath("/dashboard"));
+    render(<App />);
+
+    expect(await screen.findByText("Voter sur la proposition")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Accéder aux signatures" })).toHaveAttribute("href", "#demo-proposal-2");
+  });
+
+  it("réinitialise le scénario guidé après confirmation", async () => {
+    const changed = applyDemoAction(createDemoState(), { type: "deposit", amount: "5" });
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(changed));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    window.history.pushState({}, "", demoPath("/dashboard"));
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Réinitialiser et recommencer le parcours" }));
+
+    expect(window.confirm).toHaveBeenCalledOnce();
+    expect(JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY)).treasury).toBe(25000);
+    expect(await screen.findByText("25 ETH fictifs")).toBeInTheDocument();
   });
 
   it("conserve une proposition et son exécution après rechargement", async () => {

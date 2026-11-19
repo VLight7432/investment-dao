@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card";
 import { useDemo } from "../demoContext";
-import { DEMO_CATEGORIES, DEMO_MEMBERS, formatDemoAmount, voteTotals } from "../demoState";
+import { DEMO_CATEGORIES, DEMO_DAY, DEMO_MEMBERS, formatDemoAmount, voteTotals } from "../demoState";
 import { readDecisionDraft } from "../decisionStudio";
 
 function PageHeader({ eyebrow, title, description }) {
@@ -40,7 +40,7 @@ function ProposalCard({ proposal }) {
   const totals = voteTotals(proposal);
   const statuses = { voting: "Vote en cours", approved: "Vote approuvé", rejected: "Vote rejeté", executed: "Exécutée" };
   return (
-    <Card>
+    <Card id={`demo-proposal-${proposal.id}`}>
       <CardHeader>
         <CardTitle>Proposition fictive #{proposal.id} · {proposal.description}</CardTitle>
         <CardDescription>{statuses[proposal.status]} · Mandat au snapshot : version {proposal.snapshotVersion}</CardDescription>
@@ -70,6 +70,43 @@ function ProposalCard({ proposal }) {
   );
 }
 
+function DemoWalkthrough({ data, reset }) {
+  const proposal = data.proposals.filter((item) => item.id !== 1).sort((left, right) => left.id - right.id)[0];
+  const executed = proposal?.status === "executed";
+  const delayDays = proposal?.kind === "investment" ? Math.max(1, data.mandate.delayDays) : 1;
+  const delayElapsed = proposal && data.clock >= proposal.deadline + delayDays * DEMO_DAY;
+  const proposalHref = proposal ? `#demo-proposal-${proposal.id}` : "#demo-create-proposal";
+  const steps = [
+    { complete: Boolean(proposal), title: "Créer une proposition d’investissement", detail: "Décrivez une opération avec une contrepartie autorisée et un montant compatible avec le mandat.", link: <a href="#demo-create-proposal">Ouvrir le formulaire</a> },
+    { complete: Boolean(proposal && Object.keys(proposal.votes).length), title: "Voter sur la proposition", detail: "Chaque membre fictif peut voter une fois pendant les trois jours de vote.", link: <a href={proposalHref}>Accéder à la proposition</a> },
+    { complete: Boolean(proposal && proposal.status !== "voting"), title: "Clôturer le vote", detail: "Avancez l’horloge fictive jusqu’à la fin du vote, puis clôturez-le.", link: <a href={proposal ? "#demo-clock" : "#demo-create-proposal"}>Aller à l’horloge fictive</a> },
+    { complete: Boolean(proposal && proposal.approvals.length >= 2), title: `Obtenir les signatures Safe (${proposal?.approvals.length ?? 0}/2)`, detail: "Deux signataires fictifs distincts doivent approuver la proposition.", link: <a href={proposalHref}>Accéder aux signatures</a> },
+    { complete: Boolean(delayElapsed || executed), title: `Attendre le délai de sécurité (${delayDays} jour(s) après le vote)`, detail: "Le mandat actif reste vérifié au moment de l’exécution.", link: <a href="#demo-clock">Consulter ou avancer l’horloge</a> },
+    { complete: Boolean(executed), title: "Exécuter la proposition", detail: proposal?.status === "rejected" ? "Le vote a rejeté cette proposition ; réinitialisez pour recommencer." : "L’exécution fictive met à jour la trésorerie et le portefeuille.", link: <a href={proposalHref}>Accéder à l’exécution</a> },
+  ];
+
+  return (
+    <Card className="demo-walkthrough">
+      <CardHeader>
+        <CardTitle>Parcours guidé de la démo</CardTitle>
+        <CardDescription>Créez une proposition puis suivez chaque étape jusqu’à son exécution. Toutes les actions sont fictives et enregistrées dans ce navigateur.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ol className="demo-walkthrough-steps">
+          {steps.map((step, index) => (
+            <li className={step.complete ? "is-complete" : ""} key={step.title}>
+              <span aria-hidden="true">{step.complete ? "✓" : index + 1}</span>
+              <div><strong>{step.title}</strong><p>{step.detail}</p>{step.link}</div>
+            </li>
+          ))}
+        </ol>
+        <p className="demo-walkthrough-note">Le scénario préchargé, <a href="#demo-proposal-1">proposition #1</a>, illustre un vote sous une ancienne version du mandat. Comparez le mandat au snapshot et le mandat actif dans le <Link to="/audit">journal d’audit</Link>.</p>
+        <button className="button button-secondary" type="button" onClick={reset}>Réinitialiser et recommencer le parcours</button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function InvestmentForm({ category: initialCategory, allowCategory = false }) {
   const { run } = useDemo();
   const [category, setCategory] = useState(initialCategory);
@@ -88,7 +125,7 @@ function InvestmentForm({ category: initialCategory, allowCategory = false }) {
     }
   };
   return (
-    <Card>
+    <Card id="demo-create-proposal">
       <CardHeader><CardTitle>Créer une proposition {allowCategory ? "d’investissement" : category} fictive</CardTitle><CardDescription>Elle doit être votée et approuvée par deux signataires fictifs avant exécution.</CardDescription></CardHeader>
       <CardContent>
         <form onSubmit={submit}>
@@ -127,17 +164,18 @@ export function DemoDashboardPage() {
     <PageLayout>
       <PageHeader eyebrow="Espace membre" title="Gouvernance" description="Créez des propositions, simulez les votes et les signatures, puis exécutez-les avec des ETH fictifs." />
       <div className="space-y-6">
+        <DemoWalkthrough data={data} reset={reset} />
         <Card>
           <CardHeader><CardTitle>Trésorerie de la DAO fictive</CardTitle><CardDescription>Solde et historique enregistrés uniquement dans ce navigateur.</CardDescription></CardHeader>
           <CardContent>
             <p>{formatDemoAmount(data.treasury)}</p>
             <form onSubmit={(event) => { event.preventDefault(); if (run({ type: "deposit", amount: deposit })) setDeposit(""); }}>
               <div className="field"><label htmlFor="demo-deposit">Ajouter des ETH fictifs</label><input id="demo-deposit" type="number" min="0.001" step="0.001" value={deposit} onChange={(event) => setDeposit(event.target.value)} required /></div>
-              <div className="form-actions"><button className="button button-secondary" type="submit">Ajouter fictivement</button><button className="button button-secondary" type="button" onClick={reset}>Réinitialiser la simulation</button></div>
+              <div className="form-actions"><button className="button button-secondary" type="submit">Ajouter fictivement</button></div>
             </form>
           </CardContent>
         </Card>
-        <Card>
+        <Card id="demo-clock">
           <CardHeader><CardTitle>Horloge fictive</CardTitle><CardDescription>Temps simulé : {new Date(data.clock).toLocaleString("fr-FR")}. Faites avancer le temps pour terminer les votes et les délais de sécurité.</CardDescription></CardHeader>
           <CardContent><form onSubmit={(event) => { event.preventDefault(); run({ type: "advance", days }); }}>
             <div className="field"><label htmlFor="demo-days">Nombre de jours à avancer</label><input id="demo-days" type="number" min="1" max="3650" step="1" value={days} onChange={(event) => setDays(event.target.value)} required /></div>
